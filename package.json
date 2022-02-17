@@ -1,0 +1,35 @@
+{
+  "name": "project-deploy",
+  "version": "0.0.1",
+  "description": "For more convenient deployment of the project.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wang-Zejin/project-deploy.git"
+  },
+  "keywords": [
+    "deploy",
+    "publis",
+    "project",
+    "project-deploy"
+  ],
+  "author": "wang",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Wang-Zejin/project-deploy/issues"
+  },
+  "bin": {
+    "pd": "./bin/pd.js"
+  },
+  "dependencies": {
+    "archiver": "^5.3.0",
+    "chalk": "^2.4.2",
+    "commander": "^9.0.0",
+    "inquirer": "^8.2.0",
+    "node-ssh": "^12.0.3"
+  },
+  "homepage": "https://github.com/Wang-Zejin/project-deploy#readme"
+}
