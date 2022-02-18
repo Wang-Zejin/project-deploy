@@ -14,7 +14,7 @@ module.exports = {
   },
   warning: function (...args) {
     console.warn(
-      chalk.bold.bgYellow('\n Warning ') + 
+      chalk.bold.bgYellow.black('\n Warning ') + 
       chalk.yellow(...args)
     )
   },

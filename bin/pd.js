@@ -17,6 +17,16 @@ program
     require('../command/deploy')(options)
   })
 
+program
+  .command('back')
+  .description('选择服务器上的备份，并将项目切换到备份文件')
+  .option('-l, --list', '只展示备份列表，不进行切换')
+  .option('-c, --custom', '手动输入服务器配置，进行部署，此时mode失效')
+  .option('-m, --mode <mode>', '选择配置文件模式')
+  .action((options) => {
+    require('../command/back')(options)
+  })
+  
 // 查看信息
 // program
 //   .command('info <mode>')
