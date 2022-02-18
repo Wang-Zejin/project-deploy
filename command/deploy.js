@@ -6,7 +6,7 @@ const archiver = require('archiver')
 const fs = require('fs')
 // 本地依赖工具
 const out = require('../utils/out')
-const getConfigFromShell = require('../utils/getConfigFromShell')
+const { getConfigs, getPassword } = require('../utils/getConfigs')
 const rootPath = process.cwd()
 const tempZipPath = path.resolve(rootPath, './temp.zip')
 let configs = null
@@ -42,9 +42,10 @@ const ssh = new NodeSSH()
  */
 async function getConfig(options) {
   let configs
+  out.info('正在获取相关配置...')
   try {
     if (options.custom) {
-      configs = await getConfigFromShell(options)
+      configs = await getConfigs(options)
     } else if (options.mode && options.mode !== null) {
       configs = require(path.resolve(rootPath, `./project-deploy/config.${options.mode}.js`))
     } else {
@@ -64,6 +65,7 @@ async function getConfig(options) {
  * @returns {Promise} 返回一个Promise对象
  */
 function connect(config) {
+  out.info('正在与服务器简历ssh连接...')
   return ssh.connect({
     host: config.host,
     port: config.port,
@@ -126,15 +128,62 @@ function upload(config, tempZipPath) {
       )
     })
 }
-
+/**
+ * 获取文件更改时间作为备份文件名称
+ * @param {object} config 服务器配置对象
+ * @returns {Promise}
+ */
+function getDeployTime(config) {
+  return ssh.execShow(
+    {},
+    `stat ${config.targetName}`,
+    { cwd: config.targetPath}
+  )
+    .then((result) => {
+      if (result.stderr) {
+        return result
+      }
+      const deployTime = result.stdout.split('\n')
+        .find(item => item.includes('Change'))
+        .match(/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/g)[0]
+        .replace(/\s/g, '+')
+        return { deployTime }
+    })
+    .catch((err) => {
+      out.warning(err)
+    })
+}
+/**
+ * 
+ * @param {array} backupList 备份文件列表
+ * @param {object} config 服务器配置对象
+ * @returns {array} 返回需要删除备份文件列表
+ */
+function getOverList(backupList, configs) {
+  backupList
+    .sort((a, b) => {
+      let aTime = new Date(a.replace('.zip', '').replace('+', ' ')).getTime()
+      let bTime = new Date(b.replace('.zip', '').replace('+', ' ')).getTime()
+      return bTime - aTime
+    })
+  let rmList = []
+  for(let i = backupList.length-1; i>=0; i--) {
+    if (backupList.length > configs.backupMaxCount) {
+      rmList.push(backupList.splice(backupList.length-1, 1)[0])
+    } else {
+      break
+    }
+  }
+  return rmList
+}
 /**
  * 备份服务器正在运行的项目
  * @param {object} config 服务器配置对象
  * @returns {Promise}
  */
 function backupFile(configs) {
-  let date = new Date()
-  let dateStr = `${date.getFullYear()}${date.getMonth()+1}${date.getDate()}${date.getHours()}${date.getMinutes()}${date.getSeconds()}`
+  let dateStr = new Date().getTime()
+  out.info('正在进行备份...')
   return ssh.execShow({ stopProcess: false }, `find ${configs.backupPath}`)
     .then((result) => {
       if (result.stderr) {
@@ -142,17 +191,21 @@ function backupFile(configs) {
       }
       return result
     })
+    // .then((result) => {
+    //   return ssh.execShow(
+    //     { stopProcess: false},
+    //     `find ${configs.targetName}`, 
+    //     { cwd: configs.targetPath }
+    //   )
+    // })
     .then((result) => {
-      return ssh.execShow(
-        { stopProcess: false},
-        `find ${configs.targetName}`, 
-        { cwd: configs.targetPath }
-      )
+      return getDeployTime(configs)
     })
     .then((result) => {
       if (result.stderr) {
         return Promise.reject(result.stderr)
       }
+      dateStr = result.deployTime
       return ssh.execShow(
         {},
         `mv ./${configs.targetName} ${configs.backupPath}/${dateStr}`, 
@@ -173,6 +226,32 @@ function backupFile(configs) {
         { cwd: configs.backupPath }
       )
     })
+    .then((result) => {
+      return ssh.execCommand(
+        'ls',
+        { cwd: configs.backupPath }
+      )
+    })
+    .then((result) => {
+      let backupList = result.stdout.split('\n')
+      if (
+        configs.backupMaxCount && 
+        configs.backupMaxCount > 0 &&
+        backupList.length > configs.backupMaxCount
+      ) {
+        return getOverList(backupList, configs)
+      }
+    })
+    .then((rmList) => {
+      if (rmList && rmList.length !== 0) {
+        rmList.forEach((zipName) => {
+          ssh.execCommand(
+            `rm -rf ${zipName}`,
+            { cwd: configs.backupPath}
+          )
+        })
+      }
+    })
     .catch((result) => {
       out.warning('备份异常')
     })
@@ -184,6 +263,7 @@ function backupFile(configs) {
  * @returns {Promise}
  */
 function remoteUnzip(configs) {
+  out.info('正在进行部署...')
   return ssh.execShow(
     { stopProcess: false },
     `find ${configs.targetName}`,
@@ -216,6 +296,7 @@ function remoteUnzip(configs) {
  * @returns {Promise}
  */
 function removeTemp(configs, tempZipPath) {
+  out.info('正在删除相关临时文件...')
   return ssh.execCommand(
     `find ${configs.targetName}_old_temp`,
     { cwd: configs.targetPath }
@@ -273,8 +354,11 @@ function removeTemp(configs, tempZipPath) {
 module.exports = function (options) {
   getConfig(options)
     .then((config) => {
-      configs = config
-      return connect(config)
+      return Promise.all([configs, getPassword()])
+    })
+    .then((resultArr) => {
+      configs = Object.assign(resultArr[0], resultArr[1])
+      return connect(configs)
     })
     .then((nodessh) => {
       return startZip(configs, tempZipPath)

@@ -5,7 +5,6 @@ module.exports = {
       chalk.bold.bgRed('\n Error ') +
       chalk.red(...args)
     )
-    process.exit(0)
   },
   info: function (...args) {
     console.log(
