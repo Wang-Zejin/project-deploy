@@ -1,5 +1,5 @@
 {
-  "name": "project-deploy",
+  "name": "projectdeploy",
   "version": "0.0.1",
   "description": "For more convenient deployment of the project.",
   "scripts": {
