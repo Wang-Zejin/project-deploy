@@ -1,5 +1,7 @@
 const inquirer = require('inquirer')
-
+const fs = require('fs')
+const path = require('path')
+const out = require('./out')
 module.exports.getConfigs = function (options) {
   const prompts = [
     {
@@ -29,6 +31,11 @@ module.exports.getConfigs = function (options) {
     },
     {
       type: 'input', 
+      name: 'targetName',
+      message: '请输入服务器部署目标文件夹名称：'
+    },
+    {
+      type: 'input', 
       name: 'backupPath',
       message: '请输入备份文件路径：',
       when: () => options.backup
@@ -55,6 +62,16 @@ module.exports.getConfigs = function (options) {
     .then((answers) => {
       if (answers.save){
         // 保存配置文件到文件夹
+        console.log(answers)
+        fs.appendFile(
+          path.resolve(process.cwd(), `./project-deploy/config.${answers.modeName}.js`),
+          `module.exports = {\n  host: '${answers.host}',\n  port: ${answers.port},\n  username: '${answers.username}',\n  localPath: '${answers.localPath}',\n  targetPath: '${answers.targetPath}',\n  targetName: '${answers.targetName}',\n  backupPath: '${answers.backupPath || ""}',\n  backupMaxCount: ${answers.backupMaxCount || 5}\n}`,
+          (err) => {
+            if (err) {
+              out.error(err)
+            }
+          }
+        )
       }
       const { save, modeName, ...configs} = answers
       return configs
