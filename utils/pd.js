@@ -59,12 +59,12 @@ async function getConfig (options) {
   return Object.assign(configs, password)
 }
 /**
- * 根据配置 与服务器简历ssh链接
+ * 根据配置 与服务建立ssh链接
  * @param {object} config 服务器配置对象
  * @returns {Promise} 返回一个Promise对象
  */
 function connect (config) {
-  out.info('正在与服务器简历ssh连接...')
+  out.info('正在与服务器建立ssh连接...')
   return ssh.connect({
     host: config.host,
     port: config.port,
