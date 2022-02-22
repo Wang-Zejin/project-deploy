@@ -47,7 +47,7 @@ async function getConfig (options) {
     } else if (options.mode && options.mode !== null) {
       configs = require(path.resolve(rootPath, `./project-deploy/config.${options.mode}.js`))
     } else {
-      configs = require(path.resolve(rootPath, `./project-deploy/config.js`))
+      configs = require(path.resolve(rootPath, `./config.pd.js`))
     }
     password = await getPassword()
   } catch(err) {

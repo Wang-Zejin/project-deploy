@@ -1,5 +1,5 @@
 {
-  "name": "projectdeploy",
+  "name": "pd",
   "version": "0.0.1",
   "description": "For more convenient deployment of the project.",
   "scripts": {
@@ -11,7 +11,7 @@
   },
   "keywords": [
     "deploy",
-    "publis",
+    "publish",
     "project",
     "project-deploy"
   ],
