@@ -368,7 +368,7 @@ function getBackupList(configs) {
       if (result.stderr) {
         out.warning(result.stderr)
         out.warning('可能是服务器未找到相关备份文件夹。')
-        process.exit(0)
+        process.exit(1)
       }
       return result.stdout.split('\n')
     })

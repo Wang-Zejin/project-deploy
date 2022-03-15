@@ -47,6 +47,6 @@ module.exports = function (options) {
       console.log(err)
     })
     .finally(() => {
-      removeTemp(configs, tempZipPath).then(() => { process.exit(1) })
+      removeTemp(configs, tempZipPath).then(() => { process.exit(0) })
     })
 }
